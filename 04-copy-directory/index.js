@@ -1,29 +1,46 @@
-const fs = require('fs');
+const fs = require('fs/promises');
 const path = require('path');
+const dirPathFrom = path.join(__dirname, 'files');
+const dirPathTo = path.join(__dirname, 'files-copy');
 
-async function copyDir () {
+async function rmDir(folderPath) {
   try {
-    fs.promises.mkdir(path.join(__dirname, 'files-copy'), {recursive: true});
-
-    fs.readdir(path.join(__dirname, 'files-copy'), (err, filesCopy) => {
-      if (err) throw err;
-      for (const fileCopy of filesCopy) {
-        fs.unlink(path.join(__dirname, 'files-copy', fileCopy), err => {
-          if (err) throw err;
-        });
-      }
-    });
-    
-    const files = await fs.promises.readdir(path.join(__dirname, 'files'), {withFileTypes: true});
-    for(const file of files) {
-      console.log(file);
-      if (file.isFile()) {
-        await fs.promises.copyFile(path.join(__dirname, 'files', file.name), path.join(__dirname, 'files-copy', file.name));
-      }
-    }
-  } catch (err) {
-    console.error(err);
+    await fs.rm(folderPath, { recursive: true });
+  } catch (e) {
+    if(e.code !== 'ENOENT') throw e;
   }
 }
 
-copyDir();
+async function makeDir(distFolderPath) {
+  try {
+    await fs.mkdir(distFolderPath, {recursive: true});
+  } catch (e) {
+    if(e.code !== 'EEXIST') throw e;
+  }
+}
+
+async function copyDir(dirPathFrom, dirPathTo) {
+  try {
+    await makeDir(dirPathTo);
+
+    const files = await fs.readdir(dirPathFrom, {withFileTypes: true});
+    for(const file of files) {
+      if (file.isFile()) {
+        await fs.copyFile(path.join(dirPathFrom, file.name), path.join(dirPathTo, file.name));
+      } else if(file.isDirectory()) {
+        await copyDir(`${dirPathFrom}/${file.name}`, `${dirPathTo}/${file.name}`);
+      }
+    }
+  } catch (err) {
+    console.error('Failed to copy files');
+    throw err;
+  }
+}
+
+async function build() {
+  await rmDir(dirPathTo);
+  await makeDir(dirPathTo);
+  await copyDir(dirPathFrom, dirPathTo);;
+}
+
+build();
