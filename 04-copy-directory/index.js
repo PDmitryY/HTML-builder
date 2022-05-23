@@ -40,7 +40,7 @@ async function copyDir(dirPathFrom, dirPathTo) {
 async function build() {
   await rmDir(dirPathTo);
   await makeDir(dirPathTo);
-  await copyDir(dirPathFrom, dirPathTo);;
+  await copyDir(dirPathFrom, dirPathTo);
 }
 
 build();
