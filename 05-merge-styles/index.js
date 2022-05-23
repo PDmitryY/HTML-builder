@@ -1,26 +1,22 @@
-const fs = require('fs');
+const fs = require('fs/promises');
 const path = require('path');
+const stylesFolderPath = path.join(__dirname, 'styles');
+const outputFilePath = path.join(__dirname, 'project-dist', 'bundle.css');
 
-(async () => {
-  fs.writeFile(path.join(__dirname, 'project-dist', 'bundle.css'), '',
-    async (err) => {
-      if (err) throw err;
-      const files = await fs.promises.readdir(path.join(__dirname, 'styles'), {withFileTypes: true});
-      let text = '';
-      for(const file of files) {
-        if (file.isFile()) {
-          const pathFileParse = path.parse(path.join(__dirname, 'styles', file.name));
-          if (pathFileParse.ext == '.css') {
-            let readStream = fs.createReadStream(path.join(__dirname, 'styles', file.name));
-            readStream.on('data', (chunk) => {text += chunk.toString();});
-            readStream.on('end', () => {
-              fs.appendFile(path.join(__dirname, 'project-dist', 'bundle.css'), text,
-                (err,) => {
-                  if (err) throw err;
-                });
-            });
-          }
-        }
+async function bundleCss(stylesFolderPath, outputFilePath) {
+  try {
+    let allCssString = '';
+    for(const file of await fs.readdir(stylesFolderPath)) {
+      const pathFileParse = path.parse(`${stylesFolderPath}/${file.toString()}`);
+      if (pathFileParse.ext == '.css') {
+        allCssString += (await fs.readFile(`${stylesFolderPath}/${file.toString()}`, 'utf8')).toString() + '\n';
       }
-    });
-})();
+    }
+    await fs.writeFile(outputFilePath, allCssString);
+  } catch (e) {
+    console.error('Failed to bundle css');
+    throw e;
+  }
+}
+
+bundleCss(stylesFolderPath, outputFilePath);

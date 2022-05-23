@@ -44,9 +44,11 @@ async function bundleCss(stylesFolderPath, outputFilePath) {
   try {
     let allCssString = '';
     for(const file of await fs.readdir(stylesFolderPath)) {
-      allCssString += (await fs.readFile(`${stylesFolderPath}/${file.toString()}`, 'utf8')).toString() + '\n';
+      const pathFileParse = path.parse(`${stylesFolderPath}/${file.toString()}`);
+      if (pathFileParse.ext == '.css') {
+        allCssString += (await fs.readFile(`${stylesFolderPath}/${file.toString()}`, 'utf8')).toString() + '\n';
+      }
     }
-
     await fs.writeFile(outputFilePath, allCssString);
   } catch (e) {
     console.error('Failed to bundle css');
